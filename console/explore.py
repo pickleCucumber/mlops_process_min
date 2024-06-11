@@ -17,15 +17,12 @@ boosting = joblib.load(BOOSTING_MODEL_PATH)
 
 # коннектор к бд
 
-#conn = "mssql+pyodbc://ml:m97xBnTGDf4LBZ4k@192.168.20.11/dms?driver=SQL+Server" # на проде юзается
-conn = "mssql+pyodbc://KondratenkoD:NorC^juz2REVaq@192.168.20.16/Billing?driver=SQL+Server"
+conn = "mssql+pyodbc://login:password@lokalhost?driver=SQL+Server"
 engine = create_engine(conn)
 
 # запрос чек новых айди
-#query_check="""select distinct BillingAppId from G_TransferPaylater with(nolock)  where StatusProcessTypeId = 3 and CounterpartyId = 23"""
-query_check="""select distinct BillingAppId from G_TransferPaylater with(nolock)  where StatusProcessTypeId = 3 and CounterpartyId = 23"""
+query_check="""select distinct id from G"""
 
-# StatusProcessTypeId = 3 - требуется запрос внешнего сервиса; CounterpartyId = 23 - внешний сервис - ML модель
 # добавить джоин на клиентскую таблу
 
 #запрос сбора данных
@@ -45,7 +42,7 @@ def read() ->pd.DataFrame:
 def insert(data: pd.DataFrame):
     cursor = conn.cursor()
     for index, row in data.iterrows():
-         cursor.execute("""insert into dms.dbo.output_vector_ml (appId, typeid, probability, threshold, trustML) 
+         cursor.execute("""insert into (appId, typeid, probability, threshold, trustML) 
                         values(?,?,?,?,?)""",
                         row.appId,row.typeid,row.probability,row.threshold,row.trustML)
 
