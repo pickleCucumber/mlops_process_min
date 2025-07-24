@@ -37,6 +37,35 @@ query0="""select distinct AppId from [ServiceRequest_Queue] with(nolock) where C
 # StatusProcessTypeId = 3 - требуется запрос внешнего сервиса; CounterpartyId = 29 - внешний сервис - ML модель
 
 
+##########################препроцессинг##########################
+def preprocess_new(data: pd.DataFrame) -> pd.DataFrame:
+    from dateutil.relativedelta import relativedelta
+
+    nation_dict = {'Кыргызстан': 4, 'Таджикистан': 6, 'Казахстан': 3, 'Беларусь': 2, 'Узбекистан': 7, 'Азербайджан': 0,
+                   'Армения': 1, 'Молдавия': 5}
+    data["nation0"] = data["nation"].map(nation_dict)
+    data['dtstart'] = pd.to_datetime(data['dtstart'])
+    data['birthday'] = pd.to_datetime(data['birthday'])
+    data['age'] = data.apply(lambda x: relativedelta(pd.Timestamp.today(), x['birthday']).years, axis=1)
+    data['megafon_score'] = data['INTEGRALSCOREValueId'].copy()
+    data['mail_score'] = data['Score'].copy()
+    return data
+
+
+
+####################################для записи результата##############################################################
+
+res=pd.DataFrame(columns=['appId', 'typeid', 'probability', 'threshold', 'trustML'])
+def postprocess(app: str, tresh: float, X: pd.Series, typeid: int) -> pd.DataFrame:
+    res['appId']=app
+    res['typeid']=typeid
+    res['probability']=round(X, 5).astype(float)
+    res['threshold']=tresh
+    #вот тут спорно
+    res['trustML']=1
+    return res
+
+
 
 
 def old_model(data: pd.DataFrame) -> pd.DataFrame:
