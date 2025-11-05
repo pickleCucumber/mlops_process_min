@@ -4,7 +4,6 @@ import datetime
 import logging
 import sys
 from datetime import datetime as dt
-import os
 from process import *
 import time
 import datetime
@@ -23,7 +22,13 @@ psw = os.getenv("db_pass")
 log = os.getenv("db_log")
 ###логирование
 LOG_DIR = r"C:\Users\Test_app\Desktop\logger"
-LOG_FILENAME = "antifraud_monitor.log"
+if len(sys.argv) > 1:
+    log_id = sys.argv[1]
+else:
+    log_id = "antifraud"
+
+LOG_FILENAME = f"{log_id}_monitor.log"
+
 FULL_LOG_PATH = os.path.join(LOG_DIR, LOG_FILENAME)
 os.makedirs(LOG_DIR, exist_ok=True)
 logger = logging.getLogger('AntiFraudLogger')
@@ -69,6 +74,8 @@ cursor2 = conn2.cursor()
 
 # запрос чек новых айди
 query0="""select distinct AppId from Queue with(nolock) where CounterpartyId = 29 and Status = 0 and cast(dtInsert as date)=cast(GETDATE() as date)"""
+# StatusProcessTypeId = 3 - требуется запрос внешнего сервиса; CounterpartyId = 29 - внешний сервис - ML модель
+
 
 
 
@@ -92,9 +99,8 @@ while True:
         apps = app['AppId'].to_list()
         if len(apps) != 0:
             logger.info(
-                f"[{dt.now().isoformat(' ', 'seconds')}] Найдена новая заявка: {apps}")
-            #print('app', apps)
-            #print(str(datetime.datetime.now()))
+                f"[{dt.now().isoformat(' ', 'seconds')}] Найдена новая заявка: {apps} в {log_id}")
+
             cursor.execute("""update Queue set Status = 1, dtSendRequest=getdate() where AppId=""" + str(apps[0]) +""" and  CounterpartyId = 29 """)
             conn.commit()
             logger.info(f"Статус заявки {apps} обновлен до 'в обработке'.")
@@ -114,14 +120,14 @@ where app.id=""" + str(apps[0]) + """
 
             for index, row in res.iterrows():
                 try:
-                    cursor2.execute("""insert into dms.dbo.output_vector_ml (appId, typeid, probability, threshold, trustML)
+                    cursor2.execute("""insert into output_vector_ml (appId, typeid, probability, threshold, trustML)
                                                 values(?,?,?,?,?)""",
                                     row.appId, row.typeid, row.probability, row.threshold, row.trustML)
 
                     conn2.commit()
                 except Exception as e:
                     logger.error(f"Ошибка при вставке результата для {apps}: {e}",
-                                 exc_info=False)  
+                                 exc_info=False)
                     continue
 
             logger.info(f"Результаты для {apps} занесены в БД. [{dt.now().isoformat(' ', 'seconds')}]")
@@ -135,10 +141,11 @@ where app.id=""" + str(apps[0]) + """
             gc.collect()
     except Exception as e:
         logger.error(f"Опять правки в бд: {e}", exc_info=True)
+        #print("\nТы ебан: {0}.".format(str(e)))
         time.sleep(60)
+        sys.exit(1)
     finally:
         conn.close()
-
 
 
 
