@@ -1,0 +1,46 @@
+@echo off
+setlocal
+
+REM ===============================================
+REM === КОНФИГУРАЦИЯ ===
+REM ===============================================
+set "WORKING_DIR=C:\Users\Test_app"
+set "SCRIPT_PATH=D:\console_test\console_antifraud\explore.py"
+set "RESTART_DELAY=5"
+
+echo ===============================================
+echo ?? Python Auto-Restart Monitoring
+echo Model: %SCRIPT_PATH%
+echo ===============================================
+
+:loop
+REM === ПЕРЕХОД В РАБОЧУЮ ДИРЕКТОРИЮ ===
+cd /d "%WORKING_DIR%"
+
+echo.
+echo =========================================================================
+echo ?? [%DATE% %TIME%] Start new Python process...
+echo =========================================================================
+
+REM === ЗАПУСК СКРИПТА ===
+python "%SCRIPT_PATH%"
+
+REM === ПРОВЕРКА КОДА ВОЗВРАТА ===
+if %errorlevel% equ 0 (
+    echo.
+    echo ? [%DATE% %TIME%] Python process shutdown **success** (Code 0).
+) else (
+    echo.
+    echo ?? [%DATE% %TIME%] Python process shutdown **with error** (Code %errorlevel%).
+)
+
+echo.
+echo ?? [%DATE% %TIME%] Restart in %RESTART_DELAY% sec...
+echo -------------------------------------------------------------------------
+echo.
+
+timeout /t %RESTART_DELAY% >nul
+goto loop
+
+:end
+endlocal
