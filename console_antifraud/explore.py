@@ -73,7 +73,7 @@ cursor2 = conn2.cursor()
 
 
 # запрос чек новых айди
-query0="""select distinct AppId from Queue with(nolock) where CounterpartyId = 29 and Status = 0 and cast(dtInsert as date)=cast(GETDATE() as date)"""
+query0="""select distinct AppId from [ServiceRequest_Queue] with(nolock) where CounterpartyId = 29 and Status = 0 and cast(dtInsert as date)=cast(GETDATE() as date)"""
 # StatusProcessTypeId = 3 - требуется запрос внешнего сервиса; CounterpartyId = 29 - внешний сервис - ML модель
 
 
@@ -101,7 +101,7 @@ while True:
             logger.info(
                 f"[{dt.now().isoformat(' ', 'seconds')}] Найдена новая заявка: {apps} в {log_id}")
 
-            cursor.execute("""update Queue set Status = 1, dtSendRequest=getdate() where AppId=""" + str(apps[0]) +""" and  CounterpartyId = 29 """)
+            cursor.execute("""update [ServiceRequest_Queue] set Status = 1, dtSendRequest=getdate() where AppId=""" + str(apps[0]) +""" and  CounterpartyId = 29 """)
             conn.commit()
             logger.info(f"Статус заявки {apps} обновлен до 'в обработке'.")
             data = pd.read_sql_query("""
@@ -120,7 +120,7 @@ where app.id=""" + str(apps[0]) + """
 
             for index, row in res.iterrows():
                 try:
-                    cursor2.execute("""insert into output_vector_ml (appId, typeid, probability, threshold, trustML)
+                    cursor2.execute("""insert into dms.dbo.output_vector_ml (appId, typeid, probability, threshold, trustML)
                                                 values(?,?,?,?,?)""",
                                     row.appId, row.typeid, row.probability, row.threshold, row.trustML)
 
